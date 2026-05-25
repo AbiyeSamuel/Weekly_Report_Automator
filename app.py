@@ -1,3 +1,12 @@
+import subprocess
+import sys
+
+# Force Streamlit to install docxcompose if it ignored requirements.txt
+try:
+    import docxcompose
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "docxcompose"])
+
 import streamlit as st
 import pandas as pd
 from docxtpl import DocxTemplate, InlineImage
