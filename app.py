@@ -55,7 +55,7 @@ if st.button("✨ Extract Course Details with AI", type="primary"):
 
                 # Configure Gemini
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.5-flash')
 
                 prompt = f"""
                 You are an expert educational curriculum extractor. Read the following course module text.
