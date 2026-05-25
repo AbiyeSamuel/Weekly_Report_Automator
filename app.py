@@ -182,11 +182,32 @@ if submit_button:
             try:
                 doc = DocxTemplate("Master_Template.docx")
 
+                # --- PROCESS IMAGES ---
                 image_context = {}
                 for i, img in enumerate(uploaded_images):
                     img_bytes = io.BytesIO(img.getvalue())
                     image_context[f"PICTURE_{i + 1}"] = InlineImage(doc, img_bytes, width=Mm(150))
 
+                # --- DRAW THE DYNAMIC OUTLINE TABLE ---
+                # This bypasses Word's bugs by drawing a perfect table in Python
+                outline_subdoc = doc.new_subdoc()
+                table = outline_subdoc.add_table(rows=1, cols=3)
+                table.style = 'Table Grid'  # Gives it standard professional Word borders
+
+                # Set headers
+                hdr_cells = table.rows[0].cells
+                hdr_cells[0].text = 'Topic'
+                hdr_cells[1].text = 'Sub-topics'
+                hdr_cells[2].text = 'Activities'
+
+                # Add the AI data into the rows
+                for item in st.session_state.ai_outline:
+                    row_cells = table.add_row().cells
+                    row_cells[0].text = item.get("topic", "")
+                    row_cells[1].text = item.get("subtopic", "")
+                    row_cells[2].text = item.get("activity", "")
+
+                # --- EXTRACT PANDAS ACTION ITEMS ---
                 immediate = get_safe_action(action_df, "Immediate Actions")
                 recommend = get_safe_action(action_df, "Recommendations")
                 follow_up = get_safe_action(action_df, "Follow-Up")
@@ -196,7 +217,7 @@ if submit_button:
 
                 admin_text = f" & {second_admin}" if second_admin.strip() else ""
 
-                # Map data, including the AI table outline loop
+                # --- MAP EVERYTHING ---
                 context = {
                     "WEEK_NUMBER": week_number, "REPORTING_PERIOD": reporting_period,
                     "SUBMISSION_DATE": submission_date,
@@ -205,7 +226,9 @@ if submit_button:
 
                     "benefits": benefits, "learning_objectives": learning_objectives,
                     "learning_outcomes": learning_outcomes,
-                    "OUTLINE": st.session_state.ai_outline,  # THIS INJECTS THE PANDAS LOOP TABLE!
+
+                    # Injecting our perfectly drawn Python table here!
+                    "OUTLINE_TABLE": outline_subdoc,
 
                     "knowledge_gained": knowledge_gained, "compentencies_achieved": competencies_achieved,
                     "demonstrated_skills": demonstrated_skills,
