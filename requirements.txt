@@ -1,6 +1,7 @@
-streamlit
-pandas
-docxtpl
-python-docx
-PyPDF2
+streamlit~=1.57.0
+pandas~=2.3.3
+docxtpl~=0.20.2
+python-docx~=1.2.0
+PyPDF2~=3.0.1
 google-generativeai
+protobuf~=5.29.6
