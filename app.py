@@ -223,7 +223,7 @@ if submit_button:
                 content_mod = get_safe_action(action_df, "Content Modification")
                 resp, dead, stat = get_safe_meta(action_df)
 
-                admin_text = f" & {second_admin}" if second_admin.strip() else ""
+                admin_text = f" and {second_admin}" if second_admin.strip() else ""
 
                 # --- MAP EVERYTHING ---
                 context = {
