@@ -201,7 +201,6 @@ if submit_button:
                 # This bypasses Word's bugs by drawing a perfect table in Python
                 outline_subdoc = doc.new_subdoc()
                 table = outline_subdoc.add_table(rows=1, cols=3)
-                table.style = 'Table Grid'  # Gives it standard professional Word borders
 
                 # Set headers
                 hdr_cells = table.rows[0].cells
