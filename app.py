@@ -1,3 +1,12 @@
+import subprocess
+import sys
+
+# --- FORCED DEPENDENCY INSTALLER ---
+try:
+    import docxcompose
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "docxcompose"])
+
 import streamlit as st
 import pandas as pd
 from docxtpl import DocxTemplate, InlineImage
@@ -11,9 +20,9 @@ import json
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Weekly Report Automator", page_icon="📄", layout="wide")
 
+# --- THEME RESPONSIVE CSS ---
 st.markdown("""
     <style>
-        [data-testid="stAppViewContainer"] { background-color: #f8fafc; }
         h1, h2, h3, h4 { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 800; }
         [data-testid="stFileUploadDropzone"] { border: 2px dashed #3b82f6; border-radius: 12px; padding: 20px; background-color: rgba(59, 130, 246, 0.05); }
         [data-testid="baseButton-primary"] { background-color: #3b82f6; color: white; border-radius: 8px; font-weight: bold; border: none; transition: all 0.3s ease; }
@@ -29,42 +38,40 @@ if "ai_benefits" not in st.session_state: st.session_state.ai_benefits = ""
 if "ai_objectives" not in st.session_state: st.session_state.ai_objectives = ""
 if "ai_outcomes" not in st.session_state: st.session_state.ai_outcomes = ""
 if "ai_outline" not in st.session_state:
-    # Default empty Pandas structure
     st.session_state.ai_outline = pd.DataFrame([{"Topic": "", "Sub-topics": "", "Activities": ""}])
 
-# --- AI EXTRACTION SECTION ---
-st.subheader("🤖 Step 1: AI Module Extraction")
-api_key = st.text_input("Enter your Google Gemini API Key", type="password")
-uploaded_module = st.file_uploader("Upload Instructor's Module (PDF only for now)", type=["pdf"])
+# --- SIDEBAR: AI EXTRACTION SECTION ---
+with st.sidebar:
+    st.header("⚙️ AI Assistant")
 
-if st.button("✨ Extract Course Details with AI", type="primary"):
-    if not api_key:
-        st.error("⚠️ Please enter your Gemini API Key.")
-    elif not uploaded_module:
-        st.error("⚠️ Please upload a PDF module.")
+    # Try to get the key securely, otherwise show text input
+    if "GEMINI_API_KEY" in st.secrets:
+        api_key = st.secrets["GEMINI_API_KEY"]
     else:
-        with st.spinner("AI is reading the module and extracting data..."):
+        api_key = st.text_input("Enter Google Gemini API Key", type="password")
+
+    uploaded_module = st.file_uploader("Upload Instructor's Module (PDF)", type=["pdf"])
+    extract_btn = st.button("✨ Extract Details", type="primary", use_container_width=True)
+
+if extract_btn:
+    if not api_key:
+        st.sidebar.error("⚠️ API Key missing.")
+    elif not uploaded_module:
+        st.sidebar.error("⚠️ Upload a PDF.")
+    else:
+        with st.spinner("AI is reading the module..."):
             try:
                 pdf_reader = PyPDF2.PdfReader(uploaded_module)
-                raw_text = ""
-                for page in pdf_reader.pages:
-                    raw_text += page.extract_text() + "\n"
+                raw_text = "".join([page.extract_text() + "\n" for page in pdf_reader.pages])
 
                 genai.configure(api_key=api_key)
                 model = genai.GenerativeModel('gemini-2.5-flash')
 
                 prompt = f"""
-                You are an expert educational curriculum extractor. Read the following course module text.
-                Extract the information and return it EXACTLY as a raw JSON dictionary with NO markdown formatting.
-
-                The JSON must have these exact keys:
-                "benefits": "A short summary of the module benefits."
-                "learning_objectives": "A short paragraph of the learning objectives."
-                "learning_outcomes": "A short paragraph of the learning outcomes."
-                "outline": [ {{"Topic": "Main Topic 1", "Sub-topics": "Subtopic details", "Activities": "Suggested class activity"}}, ... ]
-
-                Course Text:
-                {raw_text[:15000]}
+                You are an expert curriculum extractor. Return exactly a raw JSON dictionary with NO markdown.
+                Keys: "benefits", "learning_objectives", "learning_outcomes", "outline".
+                Outline must be a list: [{{"Topic": "...", "Sub-topics": "...", "Activities": "..."}}]
+                Text: {raw_text[:15000]}
                 """
 
                 response = model.generate_content(prompt)
@@ -75,19 +82,16 @@ if st.button("✨ Extract Course Details with AI", type="primary"):
                 st.session_state.ai_objectives = extracted_data.get("learning_objectives", "")
                 st.session_state.ai_outcomes = extracted_data.get("learning_outcomes", "")
 
-                # Convert AI outline list into a Pandas DataFrame!
                 outline_data = extracted_data.get("outline", [{"Topic": "", "Sub-topics": "", "Activities": ""}])
                 st.session_state.ai_outline = pd.DataFrame(outline_data)
 
-                st.success("✅ AI Extraction Complete! Scroll down to review and edit.")
+                st.sidebar.success("✅ Extraction Complete!")
             except Exception as e:
-                st.error(f"AI Extraction Failed: {e}")
+                st.sidebar.error(f"AI Failed: {e}")
 
-st.divider()
-
-# --- THE INPUT FORM ---
+# --- MAIN SCREEN: THE INPUT FORM ---
 with st.form("report_form"):
-    st.subheader("Step 2: General Information")
+    st.subheader("Step 1: General Information")
     col1, col2, col3 = st.columns(3)
     with col1:
         week_number = st.text_input("Week Number")
@@ -100,12 +104,10 @@ with st.form("report_form"):
         module_number = st.text_input("Module Number")
         module_title = st.text_input("Module Title")
 
-    st.subheader("Step 3: AI-Assisted Learning Outcomes")
+    st.subheader("Step 2: AI-Assisted Learning Outcomes")
     benefits = st.text_area("Benefits of Module", value=st.session_state.ai_benefits, height=100)
 
-    # --- PANDAS UI FOR OUTLINE TABLE ---
     st.markdown("##### Detailed Outline (Interactive Table)")
-    st.info("Edit the AI's outline directly in this table before generating the document.")
     outline_df = st.data_editor(st.session_state.ai_outline, num_rows="dynamic", use_container_width=True)
 
     learning_objectives = st.text_area("Learning Objectives", value=st.session_state.ai_objectives, height=100)
@@ -115,7 +117,7 @@ with st.form("report_form"):
     competencies_achieved = st.text_area("Competencies Achieved")
     demonstrated_skills = st.text_area("Demonstrated Skills")
 
-    st.subheader("Step 4: Metrics & Assessment")
+    st.subheader("Step 3: Metrics & Assessment")
     col_a, col_b, col_c = st.columns(3)
     with col_a: attendance = st.text_input("Attendance / Punctuality")
     with col_b: engagement_level = st.text_input("Engagement Level")
@@ -132,7 +134,7 @@ with st.form("report_form"):
 
     observations = st.text_area("Observations", height=100)
 
-    st.subheader("Step 5: Action Items")
+    st.subheader("Step 4: Action Items")
     default_actions = pd.DataFrame([
         {"Category": "Immediate Actions", "Action": "", "Responsibility": "", "Deadline": "", "Status": ""},
         {"Category": "Recommendations", "Action": "", "Responsibility": "", "Deadline": "", "Status": ""},
@@ -142,7 +144,7 @@ with st.form("report_form"):
     ])
     action_df = st.data_editor(default_actions, num_rows="dynamic", use_container_width=True)
 
-    st.subheader("Step 6: Photo Gallery")
+    st.subheader("Step 5: Photo Gallery")
     uploaded_images = st.file_uploader("Upload exactly 5 Class Photos", type=["jpg", "jpeg", "png"],
                                        accept_multiple_files=True)
 
@@ -159,6 +161,7 @@ with st.form("report_form"):
     submit_button = st.form_submit_button("🚀 Generate Final Word Document", type="primary", use_container_width=True)
 
 
+# --- HELPER FUNCTIONS ---
 def get_safe_action(df, category_name):
     row = df[df["Category"] == category_name]
     if not row.empty: return str(row.iloc[0]["Action"])
@@ -170,6 +173,7 @@ def get_safe_meta(df):
     return "", "", ""
 
 
+# --- DOCUMENT GENERATION ENGINE ---
 if submit_button:
     if len(uploaded_images) != 5:
         st.error(f"⚠️ Please upload exactly 5 images.")
@@ -187,24 +191,18 @@ if submit_button:
 
                 # --- DYNAMIC PYTHON TABLE DRAWING ---
                 outline_subdoc = doc.new_subdoc()
-
-                # Convert the Pandas DataFrame back into a list of rows
                 table_records = outline_df.to_dict('records')
-
-                # Draw table based on how many rows Pandas has
                 table = outline_subdoc.add_table(rows=1, cols=3)
 
-                # MAGIC FIX: Steal the border style from the first table in your document!
+                # Steal the border style from the first table in your document
                 if len(doc.tables) > 0:
                     table.style = doc.tables[0].style
 
-                    # Headers
                 hdr_cells = table.rows[0].cells
                 hdr_cells[0].text = 'Topic'
                 hdr_cells[1].text = 'Sub-topics'
                 hdr_cells[2].text = 'Activities'
 
-                # Populate from the Edited Pandas UI
                 for item in table_records:
                     row_cells = table.add_row().cells
                     row_cells[0].text = str(item.get("Topic", ""))
@@ -228,9 +226,7 @@ if submit_button:
                     "SECOND_ADMIN": admin_text,
                     "benefits": benefits, "learning_objectives": learning_objectives,
                     "learning_outcomes": learning_outcomes,
-
                     "OUTLINE_TABLE": outline_subdoc,
-
                     "knowledge_gained": knowledge_gained, "compentencies_achieved": competencies_achieved,
                     "demonstrated_skills": demonstrated_skills,
                     "attendance": attendance, "engagement_level": engagement_level,

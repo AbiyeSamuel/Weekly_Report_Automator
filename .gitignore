@@ -1,0 +1,10 @@
+# Ignore all generated Word documents
+*.docx
+
+# EXCEPT the Master Template (we need this!)
+!Master_Template.docx
+
+# Ignore Python cache and virtual environments
+__pycache__/
+venv/
+.env
