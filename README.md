@@ -47,7 +47,6 @@ Follow these simple steps to generate your first automated Weekly Training Repor
 1. Click the large **🚀 Generate Final Word Document** button at the bottom of the screen.
 2. The engine will dynamically draw the tables, resize your photos, and compile the Word document in seconds.
 3. Click **📥 Download Final Generated Documentation Report (.docx)** to save the perfectly formatted file to your computer!
-
 ---
 
 ## 🛠️ Technology Stack
@@ -66,6 +65,10 @@ Follow these simple steps to generate your first automated Weekly Training Repor
 * **[Google Gemini AI](https://aistudio.google.com/):** For the powerful document extraction and reading capabilities.
 * **[docxtpl](https://docxtpl.readthedocs.io/) & [docxcompose](https://pypi.org/project/docxcompose/):** To the open-source developers who made Python-to-Word template automation seamless.
 
+### 🚀 Admins Can Immediately start using the app with the link 
+* **Weekly Report Automator** [WPA](https://weeklyreportautomator-hdzeappkogbdghrjbrvavfv.streamlit.app/)
+
+---
 This project was developed by the R&D Team at the **Centre for Marine And Offshore Technology Development (CMOTD)**.
 
 <br>
@@ -76,5 +79,5 @@ This project was developed by the R&D Team at the **Centre for Marine And Offsho
 
 **1. Clone the repository:**
 ```bash
-git clone [https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git](https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git)
+git clone [https://github.com/AbiyeSamuel/Weekly_Report_Automator.git](https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git)
 cd YOUR-REPO-NAME
